@@ -1,35 +1,62 @@
-import netlifyIdentity from 'netlify-identity-widget';
+import { useAuth0 } from '@auth0/auth0-react';
 
-export function initIdentity() {
-  netlifyIdentity.on('init', user => {
-    // no-op
-  });
-  netlifyIdentity.on('login', () => {
-    window.location.reload();
-  });
-  netlifyIdentity.on('logout', () => {
-    window.location.reload();
-  });
-  netlifyIdentity.init();
-}
+export const useAuth = () => {
+  const { 
+    loginWithRedirect, 
+    logout, 
+    user, 
+    isAuthenticated, 
+    isLoading,
+    getAccessTokenSilently 
+  } = useAuth0();
 
-export function openLogin() {
-  netlifyIdentity.open('login');
-}
-export function openSignup() {
-  netlifyIdentity.open('signup');
-}
-export function logout() {
-  netlifyIdentity.logout();
-}
-export function currentUser(): any | null {
-  return netlifyIdentity.currentUser();
-}
-export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
-  const user = netlifyIdentity.currentUser();
-  if (user) {
-    const token = await user.token?.access_token ? user.token.access_token : user?.jwt();
-    init.headers = { ...(init.headers || {}), Authorization: `Bearer ${token}` };
-  }
-  return fetch(input, init);
-}
+  const openLogin = () => loginWithRedirect();
+  const openSignup = () => loginWithRedirect({ 
+    authorizationParams: {
+      screen_hint: 'signup'
+    }
+  });
+  
+  const signOut = () => logout({ 
+    logoutParams: {
+      returnTo: window.location.origin 
+    }
+  });
+
+  const currentUser = () => {
+    if (!isAuthenticated || !user) return null;
+    return {
+      id: user.sub,
+      email: user.email,
+      user_metadata: {
+        full_name: user.name,
+        avatar_url: user.picture
+      }
+    };
+  };
+
+  const authFetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
+    try {
+      if (isAuthenticated) {
+        const token = await getAccessTokenSilently();
+        init.headers = { 
+          ...(init.headers || {}), 
+          Authorization: `Bearer ${token}` 
+        };
+      }
+    } catch (error) {
+      console.error('Error getting auth token:', error);
+    }
+    return fetch(input, init);
+  };
+
+  return {
+    openLogin,
+    openSignup,
+    logout: signOut,
+    currentUser,
+    authFetch,
+    isLoading,
+    isAuthenticated
+  };
+};

@@ -1,39 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Auth0Provider } from '@auth0/auth0-react';
-import { useAuth } from './auth';
+import { initIdentity, openLogin, openSignup, logout, currentUser } from './auth';
 import { startSession, meStats } from './api';
 import { QuizCard } from './components/QuizCard';
 
-function AppContent() {
-  const { openLogin, openSignup, logout, currentUser, isLoading, isAuthenticated } = useAuth();
+export default function App() {
+  const [user, setUser] = useState<any | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [stats, setStats] = useState<any | null>(null);
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchStats();
-    }
-  }, [isAuthenticated]);
-
-  async function fetchStats() {
-    const st = await meStats();
-    setStats(st);
-  }
+    initIdentity();
+    setUser(currentUser());
+  }, []);
 
   async function begin() {
-    if (!isAuthenticated) { 
-      openLogin(); 
-      return; 
-    }
+    if (!currentUser()) { openLogin(); return; }
     const res = await startSession(null);
     setSessionId(res.session_id);
-    await fetchStats();
-  }
-
-  const user = currentUser();
-
-  if (isLoading) {
-    return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
+    const st = await meStats();
+    setStats(st);
   }
 
   return (
@@ -72,24 +57,5 @@ function AppContent() {
         </footer>
       )}
     </main>
-  );
-}
-
-export default function App() {
-  const domain = import.meta.env.VITE_AUTH0_DOMAIN || 'your-domain.auth0.com';
-  const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID || 'your-client-id';
-  const redirectUri = import.meta.env.VITE_AUTH0_REDIRECT_URI || window.location.origin;
-
-  return (
-    <Auth0Provider
-      domain={domain}
-      clientId={clientId}
-      authorizationParams={{
-        redirect_uri: redirectUri,
-        audience: import.meta.env.VITE_AUTH0_AUDIENCE
-      }}
-    >
-      <AppContent />
-    </Auth0Provider>
   );
 }
