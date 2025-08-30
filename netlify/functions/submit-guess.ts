@@ -2,9 +2,9 @@ import type { Handler } from '@netlify/functions';
 import { sql } from './_db';
 import { requireUser } from './_auth';
 
-export const handler: Handler = async (event, context) => {
+export const handler: Handler = async (event) => {
   try {
-    const user = requireUser(context);
+    const user = requireUser(event);
     const { session_id, passage_id, guess_source, time_ms } = JSON.parse(event.body || '{}');
     if (!session_id || !passage_id || !guess_source) return { statusCode: 400, body: 'bad request' };
 
@@ -14,14 +14,14 @@ export const handler: Handler = async (event, context) => {
 
     await sql/*sql*/`
       INSERT INTO guesses (session_id, user_id, passage_id, guess_source, is_correct, time_ms)
-      VALUES (${session_id}::uuid, ${user.sub}::uuid, ${passage_id}::bigint, ${guess_source}::source_type, ${correct}, ${time_ms || 0}::int);
+      VALUES (${session_id}::uuid, ${user.id}::uuid, ${passage_id}::bigint, ${guess_source}::source_type, ${correct}, ${time_ms || 0}::int);
       UPDATE game_sessions
         SET questions_answered = questions_answered + 1,
             score = score + ${correct ? 1 : 0},
             streak = CASE WHEN ${correct} THEN streak + 1 ELSE 0 END
-        WHERE id = ${session_id}::uuid AND user_id = ${user.sub}::uuid;
+        WHERE id = ${session_id}::uuid AND user_id = ${user.id}::uuid;
       INSERT INTO user_stats (user_id, games_played, total_questions, correct, streak_best, last_played_at)
-      VALUES (${user.sub}::uuid, 0, 1, ${correct ? 1 : 0}, ${correct ? 1 : 0}, now())
+      VALUES (${user.id}::uuid, 0, 1, ${correct ? 1 : 0}, ${correct ? 1 : 0}, now())
       ON CONFLICT (user_id) DO UPDATE
         SET total_questions = user_stats.total_questions + 1,
             correct = user_stats.correct + ${correct ? 1 : 0},

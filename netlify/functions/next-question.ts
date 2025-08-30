@@ -2,15 +2,15 @@ import type { Handler } from '@netlify/functions';
 import { sql } from './_db';
 import { requireUser } from './_auth';
 
-export const handler: Handler = async (event, context) => {
+export const handler: Handler = async (event) => {
   try {
-    const user = requireUser(context);
+    const user = requireUser(event);
     const qp = new URLSearchParams(event.rawQuery || '');
     const session_id = qp.get('session_id');
     if (!session_id) return { statusCode: 400, body: 'missing session_id' };
 
     // Load category filter from session
-    const [sess] = await sql/*sql*/`SELECT category_filter FROM game_sessions WHERE id = ${session_id}::uuid AND user_id = ${user.sub}::uuid AND status = 'open'`;
+    const [sess] = await sql/*sql*/`SELECT category_filter FROM game_sessions WHERE id = ${session_id}::uuid AND user_id = ${user.id}::uuid AND status = 'open'`;
     if (!sess) return { statusCode: 404, body: 'session not found' };
     const filter = sess.category_filter || [];
 
@@ -21,7 +21,7 @@ export const handler: Handler = async (event, context) => {
         FROM passages p
         JOIN categories c ON c.id = p.category_id, r
         WHERE (${filter.length} = 0 OR p.category_id = ANY(${filter}::int[]))
-          AND NOT EXISTS (SELECT 1 FROM guesses g WHERE g.user_id = '${user.sub}'::uuid AND g.passage_id = p.id)
+          AND NOT EXISTS (SELECT 1 FROM guesses g WHERE g.user_id = '${user.id}'::uuid AND g.passage_id = p.id)
           AND p.rand_key >= r.k
         ORDER BY p.rand_key ASC
         LIMIT 1
@@ -32,7 +32,7 @@ export const handler: Handler = async (event, context) => {
         FROM passages p
         JOIN categories c ON c.id = p.category_id, r
         WHERE (${filter.length} = 0 OR p.category_id = ANY(${filter}::int[]))
-          AND NOT EXISTS (SELECT 1 FROM guesses g WHERE g.user_id = '${user.sub}'::uuid AND g.passage_id = p.id)
+          AND NOT EXISTS (SELECT 1 FROM guesses g WHERE g.user_id = '${user.id}'::uuid AND g.passage_id = p.id)
           AND p.rand_key < r.k
         ORDER BY p.rand_key ASC
         LIMIT 1

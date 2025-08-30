@@ -1,4 +1,17 @@
-import { authFetch } from './auth';
+// Get authFetch from the context instead of the old auth.ts
+let authFetchFn: ((input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) | null = null;
+
+export const setAuthFetch = (fn: (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>) => {
+  authFetchFn = fn;
+};
+
+const authFetch = (input: RequestInfo | URL, init?: RequestInit) => {
+  if (!authFetchFn) {
+    // Fallback to regular fetch if authFetch not set
+    return fetch(input, init);
+  }
+  return authFetchFn(input, init);
+};
 
 export async function startSession(categoryFilter: number[] | null) {
   const res = await authFetch('/.netlify/functions/start-session', {

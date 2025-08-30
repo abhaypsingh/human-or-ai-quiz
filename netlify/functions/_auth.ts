@@ -1,9 +1,15 @@
-export function getUser(context: any) {
-  return context?.clientContext?.user || null;
+import { extractTokenFromHeaders, verifyToken } from './middleware/auth';
+
+export function getUser(event: any) {
+  const token = extractTokenFromHeaders(event.headers || {});
+  if (!token) {
+    return null;
+  }
+  return verifyToken(token);
 }
 
-export function requireUser(context: any) {
-  const u = getUser(context);
+export function requireUser(event: any) {
+  const u = getUser(event);
   if (!u) {
     const e: any = new Error('unauthorized');
     (e.statusCode as any) = 401;

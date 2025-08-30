@@ -1,19 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Auth0Provider } from '@auth0/auth0-react';
-import { useAuth } from './auth';
-import { startSession, meStats } from './api';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { startSession, meStats, setAuthFetch } from './api';
 import { QuizCard } from './components/QuizCard';
+import { LoginForm } from './components/LoginForm';
+import { SignupForm } from './components/SignupForm';
 
 function AppContent() {
-  const { openLogin, openSignup, logout, currentUser, isLoading, isAuthenticated } = useAuth();
+  const { user, logout, isLoading, isAuthenticated, authFetch } = useAuth();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [stats, setStats] = useState<any | null>(null);
+  const [showLoginForm, setShowLoginForm] = useState(false);
+  const [showSignupForm, setShowSignupForm] = useState(false);
 
   useEffect(() => {
+    // Set the authFetch function for the API module
+    setAuthFetch(authFetch);
+    
     if (isAuthenticated) {
       fetchStats();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authFetch]);
 
   async function fetchStats() {
     const st = await meStats();
@@ -22,7 +28,7 @@ function AppContent() {
 
   async function begin() {
     if (!isAuthenticated) { 
-      openLogin(); 
+      setShowLoginForm(true); 
       return; 
     }
     const res = await startSession(null);
@@ -30,7 +36,12 @@ function AppContent() {
     await fetchStats();
   }
 
-  const user = currentUser();
+  const handleAuthSuccess = () => {
+    setShowLoginForm(false);
+    setShowSignupForm(false);
+    fetchStats();
+  };
+
 
   if (isLoading) {
     return <div style={{ textAlign: 'center', padding: '2rem' }}>Loading...</div>;
@@ -43,19 +54,35 @@ function AppContent() {
         <div style={{ display:'flex', gap: 8, alignItems:'center' }}>
           {user ? (
             <>
-              <span style={{ opacity: 0.8 }}>Hi, {user.user_metadata?.full_name || user.email}</span>
+              <span style={{ opacity: 0.8 }}>Hi, {user.name || user.email}</span>
               <button className="ghost" onClick={() => logout()}>Sign out</button>
             </>
           ) : (
             <>
-              <button className="ghost" onClick={() => openLogin()}>Sign in</button>
-              <button onClick={() => openSignup()}>Sign up</button>
+              <button className="ghost" onClick={() => setShowLoginForm(true)}>Sign in</button>
+              <button onClick={() => setShowSignupForm(true)}>Sign up</button>
             </>
           )}
         </div>
       </header>
 
-      {!sessionId ? (
+      {showLoginForm ? (
+        <LoginForm 
+          onSuccess={handleAuthSuccess}
+          onSignupClick={() => {
+            setShowLoginForm(false);
+            setShowSignupForm(true);
+          }}
+        />
+      ) : showSignupForm ? (
+        <SignupForm 
+          onSuccess={handleAuthSuccess}
+          onLoginClick={() => {
+            setShowSignupForm(false);
+            setShowLoginForm(true);
+          }}
+        />
+      ) : !sessionId ? (
         <section style={{ marginTop: 24 }}>
           <p>Guess whether a passage is from a real book or AI. Sign in to save your score and climb the leaderboard.</p>
           <button onClick={begin}>Start playing</button>
@@ -76,20 +103,9 @@ function AppContent() {
 }
 
 export default function App() {
-  const domain = import.meta.env.VITE_AUTH0_DOMAIN || 'your-domain.auth0.com';
-  const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID || 'your-client-id';
-  const redirectUri = import.meta.env.VITE_AUTH0_REDIRECT_URI || window.location.origin;
-
   return (
-    <Auth0Provider
-      domain={domain}
-      clientId={clientId}
-      authorizationParams={{
-        redirect_uri: redirectUri,
-        audience: import.meta.env.VITE_AUTH0_AUDIENCE
-      }}
-    >
+    <AuthProvider>
       <AppContent />
-    </Auth0Provider>
+    </AuthProvider>
   );
 }
