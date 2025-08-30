@@ -1,210 +1,44 @@
-/* Guess Buttons Container */
-.guessButtons {
+.container {
   display: flex;
   gap: 1rem;
-  width: 100%;
-  max-width: 600px;
-  margin: 0 auto;
-  align-items: stretch;
+  justify-content: center;
+  margin: 2rem 0;
 }
 
-/* Button Styling */
-.humanButton, .aiButton {
-  flex: 1;
-  min-height: 64px;
+.button {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s;
   position: relative;
-  transition: all 0.3s ease;
 }
 
 .humanButton {
-  background: var(--surface, #f8fafc);
-  border: 2px solid var(--border, #e2e8f0);
-  color: var(--text, #1e293b);
-}
-
-.humanButton:hover:not(:disabled) {
-  background: var(--surface-hover, #f1f5f9);
-  border-color: var(--accent, #3b82f6);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.15);
-}
-
-.humanButton:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-}
-
-.aiButton {
-  background: linear-gradient(135deg, var(--accent, #3b82f6), var(--accent2, #8b5cf6));
-  border: 2px solid transparent;
+  background: #2196f3;
   color: white;
 }
 
-.aiButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, #2563eb, #7c3aed);
+.aiButton {
+  background: #ff9800;
+  color: white;
+}
+
+.button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(59, 130, 246, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-.aiButton:active:not(:disabled) {
-  transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-}
-
-/* Button Content */
-.buttonContent {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.buttonLabel {
-  font-size: 1.125rem;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-}
-
-.buttonShortcut {
-  font-size: 0.75rem;
-  opacity: 0.7;
-  font-weight: 400;
-  transition: opacity 0.2s ease;
-}
-
-.buttonIcon {
-  font-size: 1.5rem;
-  margin-right: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Hover effects for shortcuts */
-.humanButton:hover .buttonShortcut,
-.aiButton:hover .buttonShortcut {
-  opacity: 1;
-}
-
-/* Focus states */
-.humanButton:focus-visible,
-.aiButton:focus-visible {
-  outline: 3px solid var(--accent, #3b82f6);
-  outline-offset: 2px;
-}
-
-/* Loading state */
-.humanButton:disabled,
-.aiButton:disabled {
-  opacity: 0.6;
+.button:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
-  transform: none !important;
 }
 
-/* Pulse animation for active state */
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(59, 130, 246, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
-  }
-}
-
-.humanButton:focus:not(:disabled),
-.aiButton:focus:not(:disabled) {
-  animation: pulse 1.5s infinite;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .guessButtons {
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-  
-  .humanButton, .aiButton {
-    min-height: 56px;
-  }
-  
-  .buttonLabel {
-    font-size: 1rem;
-  }
-  
-  .buttonIcon {
-    font-size: 1.25rem;
-    margin-right: 0.375rem;
-  }
-  
-  .buttonShortcut {
-    font-size: 0.6875rem;
-  }
-}
-
-@media (max-width: 480px) {
-  .guessButtons {
-    gap: 0.5rem;
-  }
-  
-  .humanButton, .aiButton {
-    min-height: 52px;
-  }
-  
-  .buttonContent {
-    gap: 0.125rem;
-  }
-  
-  .buttonLabel {
-    font-size: 0.875rem;
-  }
-  
-  .buttonIcon {
-    font-size: 1.125rem;
-    margin-right: 0.25rem;
-  }
-}
-
-/* Dark Mode */
-@media (prefers-color-scheme: dark) {
-  .humanButton {
-    background: var(--surface-dark, #1e293b);
-    color: var(--text-dark, #f8fafc);
-    border-color: var(--border-dark, #334155);
-  }
-  
-  .humanButton:hover:not(:disabled) {
-    background: var(--surface-hover-dark, #334155);
-    border-color: var(--accent, #3b82f6);
-  }
-}
-
-/* Animation for button press */
-.guessButtons button:active:not(:disabled) {
-  animation: buttonPress 0.1s ease;
-}
-
-@keyframes buttonPress {
-  0% { transform: scale(1) translateY(0); }
-  50% { transform: scale(0.98) translateY(1px); }
-  100% { transform: scale(1) translateY(0); }
-}
-
-/* Accessibility improvements */
-@media (prefers-reduced-motion: reduce) {
-  .humanButton, .aiButton {
-    transition: none;
-  }
-  
-  .humanButton:focus:not(:disabled),
-  .aiButton:focus:not(:disabled) {
-    animation: none;
-  }
-  
-  .humanButton:hover:not(:disabled),
-  .aiButton:hover:not(:disabled) {
-    transform: none;
-  }
+.shortcut {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.5rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
 }

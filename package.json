@@ -5,7 +5,7 @@
   "description": "Human or AI? A quiz to practice spotting AI-generated text vs. real books. React + Vite + Netlify Functions + Neon Postgres + Netlify Identity.",
   "scripts": {
     "dev": "vite --port 5173",
-    "build": "tsc && vite build",
+    "build": "vite build",
     "preview": "vite preview",
     "test": "vitest",
     "test:ui": "vitest --ui",

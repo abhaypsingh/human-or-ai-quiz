@@ -1,0 +1,87 @@
+.card {
+  background: var(--card-bg, #ffffff);
+  border-radius: 12px;
+  padding: 2rem;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.loading {
+  opacity: 0.6;
+  animation: pulse 2s infinite;
+}
+
+.passage {
+  font-size: 1.25rem;
+  line-height: 1.8;
+  color: var(--text-primary, #333);
+  margin-bottom: 1.5rem;
+}
+
+.metadata {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color, #e0e0e0);
+}
+
+.category {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background: var(--category-bg, #f0f0f0);
+  border-radius: 16px;
+  font-size: 0.875rem;
+  color: var(--category-text, #666);
+}
+
+.difficulty {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+}
+
+.revealed {
+  background: var(--revealed-bg, #f8f8f8);
+}
+
+.correct {
+  border: 2px solid var(--success-color, #4caf50);
+}
+
+.incorrect {
+  border: 2px solid var(--error-color, #f44336);
+}
+
+.source {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: var(--source-bg, #f5f5f5);
+  border-radius: 8px;
+}
+
+.sourceType {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.human {
+  color: var(--human-color, #2196f3);
+}
+
+.ai {
+  color: var(--ai-color, #ff9800);
+}
+
+.sourceDetails {
+  font-size: 0.875rem;
+  color: var(--text-secondary, #666);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
