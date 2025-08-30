@@ -1,5 +1,23 @@
 import { useAuth0 } from '@auth0/auth0-react';
 
+let getTokenFn: (() => Promise<string>) | null = null;
+let isAuthenticatedFn: (() => boolean) | null = null;
+
+export const authFetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
+  try {
+    if (isAuthenticatedFn?.() && getTokenFn) {
+      const token = await getTokenFn();
+      init.headers = { 
+        ...(init.headers || {}), 
+        Authorization: `Bearer ${token}` 
+      };
+    }
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+  }
+  return fetch(input, init);
+};
+
 export const useAuth = () => {
   const { 
     loginWithRedirect, 
@@ -9,6 +27,10 @@ export const useAuth = () => {
     isLoading,
     getAccessTokenSilently 
   } = useAuth0();
+
+  // Store references for authFetch to use
+  getTokenFn = getAccessTokenSilently;
+  isAuthenticatedFn = () => isAuthenticated;
 
   const openLogin = () => loginWithRedirect();
   const openSignup = () => loginWithRedirect({ 
@@ -33,21 +55,6 @@ export const useAuth = () => {
         avatar_url: user.picture
       }
     };
-  };
-
-  const authFetch = async (input: RequestInfo | URL, init: RequestInit = {}) => {
-    try {
-      if (isAuthenticated) {
-        const token = await getAccessTokenSilently();
-        init.headers = { 
-          ...(init.headers || {}), 
-          Authorization: `Bearer ${token}` 
-        };
-      }
-    } catch (error) {
-      console.error('Error getting auth token:', error);
-    }
-    return fetch(input, init);
   };
 
   return {
