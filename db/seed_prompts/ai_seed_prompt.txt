@@ -1,0 +1,15 @@
+ROLE: dataset synthesizer.
+GOAL: Generate 5,000 ORIGINAL three-sentence passages labeled source_type=ai.
+
+CATEGORIES (names must match DB categories):
+Classic Literature | Modern Nonfiction | Sci‑Fi | Fantasy | Philosophy | News‑style | Legal/Policy | Technical/Academic | AI: Narrative – Flowery | AI: Expository – Corporate | AI: Imitative – 19th‑Century
+
+RULES:
+- 3 sentences exactly; 250–650 chars total; NO quotes or copying from real books.
+- Assign category_name from the list; reading_level 1–5; style_tags 3–7 slugs; generator_model string; prompt_signature ≤80 chars.
+- CSV header exactly:
+text,category_name,source_type,reading_level,style_tags,generator_model,prompt_signature,rand_key
+- source_type MUST be 'ai' for all rows.
+- style_tags as Postgres array, e.g., {ornate,metaphor,19th_century}
+- rand_key in [0,1) with 6–8 digits.
+- Output in chunks of 1,000 rows; after each chunk print ---END CHUNK---.

@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <title>Human or AI? — Quiz</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --surface: #111827;
+        --text: #e5e7eb;
+        --accent: #38bdf8;
+      }
+      * { box-sizing: border-box; }
+      html, body, #root { height: 100%; margin: 0; background: var(--bg); color: var(--text); }
+      button {
+        font: inherit; padding: 0.85rem 1.1rem; border-radius: 12px; border: 0; cursor: pointer;
+        background: var(--accent); color: #0b1020; font-weight: 700;
+      }
+      .ghost { background: transparent; color: var(--accent); border: 2px solid var(--accent); }
+      a { color: var(--accent); }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

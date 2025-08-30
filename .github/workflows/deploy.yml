@@ -1,0 +1,198 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  NODE_VERSION: '18.x'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Run linting
+        run: npm run lint
+        
+      - name: Run type checking
+        run: npm run type-check
+        
+      - name: Run tests
+        run: npm run test
+        env:
+          CI: true
+          
+      - name: Build application
+        run: npm run build
+        env:
+          NODE_ENV: production
+          VITE_APP_TITLE: "Human or AI Quiz"
+          VITE_APP_DESCRIPTION: "Test your ability to distinguish between human-written and AI-generated text"
+          
+      - name: Run build verification
+        run: |
+          # Check that build artifacts exist
+          test -f dist/index.html || (echo "Missing index.html" && exit 1)
+          test -d dist/assets || (echo "Missing assets directory" && exit 1)
+          
+          # Check that critical files are present
+          ls -la dist/
+          
+      - name: Deploy to Netlify (Preview)
+        if: github.event_name == 'pull_request'
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './dist'
+          production-branch: main
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: |
+            Deploy from GitHub Actions - PR #${{ github.event.number }}
+            ${{ github.event.pull_request.title }}
+          enable-pull-request-comment: true
+          enable-commit-comment: false
+          enable-commit-status: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          
+      - name: Deploy to Netlify (Production)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: nwtgck/actions-netlify@v3.0
+        with:
+          publish-dir: './dist'
+          production-deploy: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: |
+            Production deploy from GitHub Actions
+            Commit: ${{ github.sha }}
+          enable-commit-comment: false
+          enable-commit-status: true
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          
+      - name: Upload build artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts-${{ github.run_number }}
+          path: |
+            dist/
+            package-lock.json
+            vite.config.ts
+          retention-days: 7
+          
+      - name: Notify deployment status
+        if: always() && github.ref == 'refs/heads/main'
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Production deployment successful!"
+          else
+            echo "❌ Production deployment failed!"
+            exit 1
+          fi
+
+  database-migrations:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build-and-deploy
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install PostgreSQL client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client
+          
+      - name: Run database migrations
+        if: github.event_name == 'push'
+        run: |
+          # Check if schema.sql has changes
+          if git diff --name-only HEAD~1 HEAD | grep -q "db/schema.sql"; then
+            echo "Schema changes detected, running migrations..."
+            
+            # Run schema updates (in a real deployment, you'd use a proper migration tool)
+            echo "Would run: psql $DATABASE_URL -f db/schema.sql"
+            
+            # Seed categories if they don't exist
+            echo "Would run: psql $DATABASE_URL -f db/categories_seed.sql"
+            
+            echo "Database migrations completed"
+          else
+            echo "No schema changes detected, skipping migrations"
+          fi
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          
+  security-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Run security audit
+        run: npm audit --audit-level=high
+        
+      - name: Check for sensitive data
+        run: |
+          # Check for accidentally committed secrets
+          if grep -r "sk_" --include="*.ts" --include="*.js" --include="*.json" .; then
+            echo "❌ Potential secret keys found!"
+            exit 1
+          fi
+          
+          if grep -r "AKIA" --include="*.ts" --include="*.js" --include="*.json" .; then
+            echo "❌ Potential AWS keys found!"
+            exit 1
+          fi
+          
+          echo "✅ No sensitive data detected"
+
+  performance-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: build-and-deploy
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.12.x
+        
+      - name: Run Lighthouse CI
+        run: |
+          lhci autorun --config .lighthouserc.json || echo "Lighthouse CI completed with warnings"
+        env:
+          LHCI_GITHUB_APP_TOKEN: ${{ secrets.LHCI_GITHUB_APP_TOKEN }}

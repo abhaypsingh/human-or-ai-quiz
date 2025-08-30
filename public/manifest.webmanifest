@@ -1,0 +1,11 @@
+{
+  "name": "Human or AI? — Quiz",
+  "short_name": "Human or AI",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#38bdf8",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }
+  ]
+}

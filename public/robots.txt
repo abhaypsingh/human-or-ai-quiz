@@ -1,0 +1,18 @@
+# Human or AI Quiz - robots.txt
+
+User-agent: *
+Allow: /
+Allow: /game
+Allow: /leaderboard
+Allow: /about
+
+# Restrict access to API endpoints and admin areas
+Disallow: /.netlify/functions/
+Disallow: /admin/
+Disallow: /api/
+
+# Allow sitemap
+Sitemap: https://your-domain.netlify.app/sitemap.xml
+
+# Crawl delay to be respectful
+Crawl-delay: 1

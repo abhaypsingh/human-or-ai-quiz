@@ -1,0 +1,32 @@
+name: DB Migrate
+
+on:
+  push:
+    paths:
+      - 'db/schema.sql'
+      - 'db/categories_seed.sql'
+      - 'db/seed/**'
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Apply schema and categories
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/schema.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f db/categories_seed.sql
+      - name: Load seed CSVs (if present)
+        if: ${{ hashFiles('db/seed/*.csv') != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          for f in db/seed/*.csv; do
+            [ -e "$f" ] || continue
+            echo "Loading $f"
+            psql "$DATABASE_URL" -c "\copy passages (text,category_id,source_type,reading_level,style_tags,generator_model,prompt_signature,rand_key) from '$f' csv header"
+          done

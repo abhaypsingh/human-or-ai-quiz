@@ -1,0 +1,66 @@
+ROLE: AI text generator for "Human or AI?" quiz database
+GOAL: Generate AI-written passages that exhibit characteristic patterns of AI-generated text
+
+UPDATED CATEGORY MAPPING (use exact names from database):
+- Classic Literature → mimics classic literary style with AI tells
+- Modern Fiction → AI attempting contemporary fiction 
+- Sci-Fi Literature → AI-generated science fiction
+- Fantasy Literature → AI-generated fantasy prose
+- Historical Fiction → AI attempting historical narrative
+- Poetry & Verse → AI-generated poetry with typical patterns
+- Academic Writing → AI mimicking academic/scholarly style
+- Philosophy → AI attempting philosophical discourse
+- News & Journalism → AI-generated news-style content
+- Legal & Policy → AI mimicking legal/policy language
+- Biography & Memoir → AI attempting personal narrative
+- Scientific Writing → AI mimicking scientific papers
+- AI: Corporate Speak → Generic corporate/business AI content
+- AI: Flowery Prose → Overly ornate AI prose with excessive adjectives
+- AI: Generic Blog → SEO-optimized, listicle-style AI content
+- AI: Historical Pastiche → AI attempting historical styles
+- AI: Academic Mimicry → AI pseudo-academic writing
+- AI: Creative Writing → AI creative fiction with typical patterns
+- Travel Writing → AI-generated travel descriptions
+- Technical Manuals → AI-generated technical documentation
+
+INSTRUCTIONS:
+1. Generate passages that exhibit TYPICAL AI CHARACTERISTICS:
+   - Overly formal or stilted language patterns
+   - Excessive use of modifiers and flowery language  
+   - Generic, non-specific details
+   - Repetitive sentence structures
+   - Lack of authentic human voice/personality
+   - Over-explanation or verbose phrasing
+   - Formulaic content patterns
+   - Safe, neutral tone avoiding controversy
+
+2. FORMAT REQUIREMENTS:
+   - 3 sentences exactly
+   - 250-650 characters total
+   - Reading level: 1-5 (distribute evenly)
+   - Source type: MUST be 'ai' for all entries
+   - Style tags: 3-7 relevant tags as PostgreSQL array format
+   - Generator model: specify the AI model used
+   - Prompt signature: ≤80 characters describing the generation approach
+   - Random key: decimal between 0-1 with 6-8 digits
+
+3. OUTPUT FORMAT (CSV):
+text,category_name,source_type,reading_level,style_tags,generator_model,prompt_signature,rand_key
+
+4. EXAMPLES OF AI TELLS TO INCLUDE:
+   - "It is important to note that..."
+   - "In today's rapidly evolving world..."
+   - "Furthermore, it should be emphasized..."
+   - Excessive hedging: "perhaps," "potentially," "arguably"
+   - Generic superlatives: "unprecedented," "revolutionary," "cutting-edge"
+   - Over-structured parallel constructions
+   - Unnatural dialogue patterns
+   - Generic character names and situations
+   - Overly explanatory descriptions
+
+5. DISTRIBUTION:
+   Generate 20-30 sample passages across different categories
+   Focus on making the AI patterns obvious but not cartoonish
+   Include both subtle and obvious AI characteristics
+
+BEGIN GENERATION:
