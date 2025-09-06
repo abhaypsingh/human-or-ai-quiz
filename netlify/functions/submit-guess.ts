@@ -51,7 +51,7 @@ export const handler: Handler = async (event) => {
     });
 
     const finalTimeMs = time_ms || 0;
-    console.log('✅ [SUBMIT-GUESS] Executing database transaction with params:', {
+    console.log('✅ [SUBMIT-GUESS] Starting database transaction with params:', {
       session_id,
       passage_id,
       guess_source,
@@ -60,23 +60,33 @@ export const handler: Handler = async (event) => {
     });
 
     // Insert guess without user_id for anonymous sessions
-    const transactionResult = await sql/*sql*/`
+    console.log('✅ [SUBMIT-GUESS] Inserting guess record...');
+    await sql/*sql*/`
       INSERT INTO guesses (session_id, user_id, passage_id, guess_source, is_correct, time_ms)
-      VALUES (${session_id}::uuid, NULL, ${passage_id}::bigint, ${guess_source}::source_type, ${correct}, ${finalTimeMs}::int);
-      UPDATE game_sessions
-        SET questions_answered = questions_answered + 1,
-            score = score + ${correct ? 1 : 0},
-            streak = CASE WHEN ${correct} THEN streak + 1 ELSE 0 END
-        WHERE id = ${session_id}::uuid;
+      VALUES (${session_id}::uuid, NULL, ${passage_id}::bigint, ${guess_source}::source_type, ${correct}, ${finalTimeMs}::int)
     `;
-    
-    console.log('✅ [SUBMIT-GUESS] Database transaction completed successfully:', transactionResult);
+    console.log('✅ [SUBMIT-GUESS] Guess record inserted successfully');
+
+    // Update game session statistics
+    console.log('✅ [SUBMIT-GUESS] Updating game session statistics...');
+    await sql/*sql*/`
+      UPDATE game_sessions
+      SET questions_answered = questions_answered + 1,
+          score = score + ${correct ? 1 : 0},
+          streak = CASE WHEN ${correct} THEN streak + 1 ELSE 0 END
+      WHERE id = ${session_id}::uuid
+    `;
+    console.log('✅ [SUBMIT-GUESS] Game session updated successfully');
 
     console.log('✅ [SUBMIT-GUESS] Executing database query to get updated session data with params:', {
       session_id
     });
 
-    const sessionResult = await sql/*sql*/`SELECT score, streak FROM game_sessions WHERE id = ${session_id}::uuid`;
+    const sessionResult = await sql/*sql*/`
+      SELECT score, streak 
+      FROM game_sessions 
+      WHERE id = ${session_id}::uuid
+    `;
     console.log('✅ [SUBMIT-GUESS] Session data query completed, raw result:', sessionResult);
 
     const [sess] = sessionResult;
