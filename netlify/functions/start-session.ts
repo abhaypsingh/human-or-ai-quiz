@@ -1,6 +1,5 @@
 import type { Handler } from '@netlify/functions';
 import { sql } from './_db';
-import { requireUser } from './_auth';
 import crypto from 'crypto';
 
 export const handler: Handler = async (event) => {
@@ -13,14 +12,6 @@ export const handler: Handler = async (event) => {
   });
 
   try {
-    console.log('🚀 [START-SESSION] Attempting user authentication...');
-    const user = requireUser(event);
-    console.log('🚀 [START-SESSION] User authenticated successfully:', {
-      userId: user.id,
-      userEmail: user.email || 'no email',
-      userProvider: user.provider || 'unknown'
-    });
-
     console.log('🚀 [START-SESSION] Parsing request body...');
     const bodyStr = event.body || '{}';
     console.log('🚀 [START-SESSION] Raw body string:', bodyStr);
@@ -32,16 +23,17 @@ export const handler: Handler = async (event) => {
     console.log('🚀 [START-SESSION] Generated session_id:', session_id);
 
     const finalCategoryFilter = category_filter || [];
-    console.log('🚀 [START-SESSION] Executing database INSERT query with params:', {
+    
+    // Create anonymous session without user_id
+    console.log('🚀 [START-SESSION] Creating anonymous session with params:', {
       session_id,
-      user_id: user.id,
       status: 'open',
       category_filter: finalCategoryFilter
     });
 
     const insertResult = await sql/*sql*/`
       INSERT INTO game_sessions (id, user_id, status, category_filter)
-      VALUES (${session_id}::uuid, ${user.id}::uuid, 'open', ${finalCategoryFilter}::int[])
+      VALUES (${session_id}::uuid, NULL, 'open', ${finalCategoryFilter}::int[])
     `;
     
     console.log('🚀 [START-SESSION] Database INSERT completed successfully:', insertResult);

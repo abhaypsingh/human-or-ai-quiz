@@ -1,6 +1,5 @@
 import type { Handler } from '@netlify/functions';
 import { sql } from './_db';
-import { requireUser } from './_auth';
 
 export const handler: Handler = async (event) => {
   console.log('❓ [NEXT-QUESTION] Function entry with event:', {
@@ -12,14 +11,6 @@ export const handler: Handler = async (event) => {
   });
 
   try {
-    console.log('❓ [NEXT-QUESTION] Attempting user authentication...');
-    const user = requireUser(event);
-    console.log('❓ [NEXT-QUESTION] User authenticated successfully:', {
-      userId: user.id,
-      userEmail: user.email || 'no email',
-      userProvider: user.provider || 'unknown'
-    });
-
     console.log('❓ [NEXT-QUESTION] Parsing query parameters...');
     const qp = new URLSearchParams(event.rawQuery || '');
     const session_id = qp.get('session_id');
@@ -31,11 +22,11 @@ export const handler: Handler = async (event) => {
     }
 
     console.log('❓ [NEXT-QUESTION] Executing database query to load session and category filter with params:', {
-      session_id,
-      user_id: user.id
+      session_id
     });
 
-    const sessionResult = await sql/*sql*/`SELECT category_filter FROM game_sessions WHERE id = ${session_id}::uuid AND user_id = ${user.id}::uuid AND status = 'open'`;
+    // Get session without requiring user_id
+    const sessionResult = await sql/*sql*/`SELECT category_filter FROM game_sessions WHERE id = ${session_id}::uuid AND status = 'open'`;
     console.log('❓ [NEXT-QUESTION] Session query completed, raw result:', sessionResult);
 
     const [sess] = sessionResult;
@@ -49,6 +40,13 @@ export const handler: Handler = async (event) => {
     const filter = sess.category_filter || [];
     console.log('❓ [NEXT-QUESTION] Category filter extracted:', filter);
 
+    // Get questions already answered in this session
+    const answeredQuery = await sql/*sql*/`
+      SELECT passage_id FROM guesses WHERE session_id = ${session_id}::uuid
+    `;
+    const answeredIds = answeredQuery.map((row: any) => row.passage_id);
+    console.log('❓ [NEXT-QUESTION] Already answered passage IDs:', answeredIds);
+
     const passageQuery = `
       WITH r AS (SELECT random() AS k)
       (
@@ -56,7 +54,7 @@ export const handler: Handler = async (event) => {
         FROM passages p
         JOIN categories c ON c.id = p.category_id, r
         WHERE (${filter.length} = 0 OR p.category_id = ANY(${filter}::int[]))
-          AND NOT EXISTS (SELECT 1 FROM guesses g WHERE g.user_id = '${user.id}'::uuid AND g.passage_id = p.id)
+          ${answeredIds.length > 0 ? `AND p.id NOT IN (${answeredIds.join(',')})` : ''}
           AND p.rand_key >= r.k
         ORDER BY p.rand_key ASC
         LIMIT 1
@@ -67,7 +65,7 @@ export const handler: Handler = async (event) => {
         FROM passages p
         JOIN categories c ON c.id = p.category_id, r
         WHERE (${filter.length} = 0 OR p.category_id = ANY(${filter}::int[]))
-          AND NOT EXISTS (SELECT 1 FROM guesses g WHERE g.user_id = '${user.id}'::uuid AND g.passage_id = p.id)
+          ${answeredIds.length > 0 ? `AND p.id NOT IN (${answeredIds.join(',')})` : ''}
           AND p.rand_key < r.k
         ORDER BY p.rand_key ASC
         LIMIT 1
@@ -78,7 +76,7 @@ export const handler: Handler = async (event) => {
     console.log('❓ [NEXT-QUESTION] Executing complex passage selection query with params:', {
       filterLength: filter.length,
       filter: filter,
-      userId: user.id
+      answeredIds: answeredIds
     });
     console.log('❓ [NEXT-QUESTION] Full passage query SQL:', passageQuery);
 
