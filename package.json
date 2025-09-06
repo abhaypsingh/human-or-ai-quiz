@@ -18,15 +18,10 @@
     "netlify": "netlify dev"
   },
   "dependencies": {
-    "@auth0/auth0-react": "^2.4.0",
     "@neondatabase/serverless": "^0.9.0",
-    "@types/bcryptjs": "^2.4.6",
-    "@types/jsonwebtoken": "^9.0.10",
-    "bcryptjs": "^3.0.2",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",
     "dotenv": "^17.2.1",
-    "jsonwebtoken": "^9.0.2",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-query": "^3.39.3",
