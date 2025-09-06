@@ -10,7 +10,12 @@ type Passage = {
   theme_tokens: any;
 };
 
-export function QuizCard({ sessionId }: { sessionId: string }) {
+interface QuizCardProps {
+  sessionId: string;
+  onStatsUpdate?: (score: number, streak: number, isCorrect: boolean) => void;
+}
+
+export function QuizCard({ sessionId, onStatsUpdate }: QuizCardProps) {
   const [passage, setPassage] = useState<Passage | null>(null);
   const [reveal, setReveal] = useState<null | 'ai' | 'human'>(null);
   const [correct, setCorrect] = useState<boolean | null>(null);
@@ -73,6 +78,11 @@ export function QuizCard({ sessionId }: { sessionId: string }) {
       setCorrect(res.correct);
       setScore(res.score);
       setStreak(res.streak);
+      
+      // Notify parent component of stats update
+      if (onStatsUpdate) {
+        onStatsUpdate(res.score, res.streak, res.correct);
+      }
     } catch (err: any) {
       console.error('📖 [QuizCard] Error submitting guess:', err);
       setError(`Failed to submit guess: ${err.message}`);

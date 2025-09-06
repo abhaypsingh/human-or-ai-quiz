@@ -1,56 +1,58 @@
 import { useEffect, useState } from 'react';
 import { SessionProvider, useSession } from './contexts/SessionContext';
-import { startSession, getSessionStats } from './api';
+import { startSession } from './api';
 import { QuizCard } from './components/QuizCard';
 import { ErrorBoundary } from './components/ErrorBoundary';
+
+interface SessionStats {
+  totalQuestions: number;
+  correct: number;
+  bestStreak: number;
+  currentStreak: number;
+}
 
 function AppContent() {
   console.log('🎨 [App] AppContent rendering');
   
-  const { session, isLoading, createSession, updateStats } = useSession();
+  const { session, isLoading, createSession } = useSession();
   const [quizSessionId, setQuizSessionId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [sessionStats, setSessionStats] = useState<SessionStats>({
+    totalQuestions: 0,
+    correct: 0,
+    bestStreak: 0,
+    currentStreak: 0
+  });
   
   console.log('🎨 [App] Current state:', {
     session: session ? { sessionId: session.sessionId } : null,
     isLoading,
     quizSessionId,
-    hasStats: !!session?.stats,
+    sessionStats,
     error
   });
 
-  useEffect(() => {
-    console.log('🎨 [App] useEffect triggered');
-    
-    if (session && quizSessionId) {
-      console.log('🎨 [App] Session exists, fetching stats');
-      fetchStats();
-    }
-  }, [quizSessionId]);
-
-  async function fetchStats() {
-    console.log('🎨 [App] fetchStats called');
-    if (!quizSessionId) return;
-    
-    setError(null);
-    
-    try {
-      const stats = await getSessionStats(quizSessionId);
-      console.log('🎨 [App] Stats fetched successfully:', stats);
-      updateStats(stats);
-    } catch (error) {
-      console.error('🎨 [App] Failed to fetch stats:', {
-        error,
-        message: (error as any).message,
-        stack: (error as any).stack
-      });
-      // Don't show error for stats, just log it
-    }
-  }
+  const updateStats = (newScore: number, newStreak: number, isCorrect: boolean) => {
+    console.log('🎨 [App] Updating stats:', { newScore, newStreak, isCorrect });
+    setSessionStats(prev => ({
+      totalQuestions: prev.totalQuestions + 1,
+      correct: newScore,
+      bestStreak: Math.max(prev.bestStreak, newStreak),
+      currentStreak: newStreak
+    }));
+  };
 
   async function begin() {
     console.log('🎨 [App] begin() called');
     setError(null);
+    
+    // Reset stats for new session
+    setSessionStats({
+      totalQuestions: 0,
+      correct: 0,
+      bestStreak: 0,
+      currentStreak: 0
+    });
     
     try {
       // Create a session if we don't have one
@@ -63,11 +65,6 @@ function AppContent() {
       const res = await startSession(null);
       console.log('🎨 [App] Quiz session started successfully:', res);
       setQuizSessionId(res.session_id);
-      
-      // Update stats after starting session
-      if (res.session_id) {
-        await fetchStats();
-      }
     } catch (error) {
       console.error('🎨 [App] Failed to start session:', {
         error,
@@ -88,9 +85,10 @@ function AppContent() {
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <h1 style={{ margin: 0 }}>Human or AI?</h1>
         <div style={{ display:'flex', gap: 8, alignItems:'center' }}>
-          {session?.stats && (
-            <span style={{ opacity: 0.6, fontSize: '0.9rem' }}>
-              Score: {session.stats.correct}/{session.stats.total_questions}
+          {quizSessionId && sessionStats.totalQuestions > 0 && (
+            <span style={{ opacity: 0.7, fontSize: '0.9rem' }}>
+              Score: {sessionStats.correct}/{sessionStats.totalQuestions} 
+              {sessionStats.currentStreak > 1 && ` 🔥 ${sessionStats.currentStreak}`}
             </span>
           )}
         </div>
@@ -103,7 +101,10 @@ function AppContent() {
         </section>
       ) : (
         <section style={{ marginTop: 24 }}>
-          <QuizCard sessionId={quizSessionId} />
+          <QuizCard 
+            sessionId={quizSessionId} 
+            onStatsUpdate={updateStats}
+          />
         </section>
       )}
 
@@ -120,9 +121,16 @@ function AppContent() {
         </div>
       )}
 
-      {session?.stats && (
+      {quizSessionId && sessionStats.totalQuestions > 0 && (
         <footer style={{ marginTop: 48, opacity: 0.8 }}>
-          <small>Total: {session.stats.total_questions} · Correct: {session.stats.correct} · Best streak: {session.stats.streak_best}</small>
+          <small>
+            Total: {sessionStats.totalQuestions} · 
+            Correct: {sessionStats.correct} · 
+            Best streak: {sessionStats.bestStreak}
+            {sessionStats.totalQuestions > 0 && 
+              ` · Accuracy: ${Math.round((sessionStats.correct / sessionStats.totalQuestions) * 100)}%`
+            }
+          </small>
         </footer>
       )}
     </main>
