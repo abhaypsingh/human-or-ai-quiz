@@ -47,40 +47,113 @@ export const handler: Handler = async (event) => {
     const answeredIds = answeredQuery.map((row: any) => row.passage_id);
     console.log('❓ [NEXT-QUESTION] Already answered passage IDs:', answeredIds);
 
-    const passageQuery = `
-      WITH r AS (SELECT random() AS k)
-      (
-        SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
-        FROM passages p
-        JOIN categories c ON c.id = p.category_id, r
-        WHERE (${filter.length} = 0 OR p.category_id = ANY(${filter}::int[]))
-          ${answeredIds.length > 0 ? `AND p.id NOT IN (${answeredIds.join(',')})` : ''}
-          AND p.rand_key >= r.k
-        ORDER BY p.rand_key ASC
-        LIMIT 1
-      )
-      UNION ALL
-      (
-        SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
-        FROM passages p
-        JOIN categories c ON c.id = p.category_id, r
-        WHERE (${filter.length} = 0 OR p.category_id = ANY(${filter}::int[]))
-          ${answeredIds.length > 0 ? `AND p.id NOT IN (${answeredIds.join(',')})` : ''}
-          AND p.rand_key < r.k
-        ORDER BY p.rand_key ASC
-        LIMIT 1
-      )
-      LIMIT 1;
-    `;
+    // Use a simpler query approach with template literals
+    let rows;
+    
+    if (answeredIds.length > 0) {
+      // If there are answered questions, exclude them
+      if (filter.length > 0) {
+        rows = await sql/*sql*/`
+          WITH r AS (SELECT random() AS k)
+          (
+            SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
+            FROM passages p
+            JOIN categories c ON c.id = p.category_id, r
+            WHERE p.category_id = ANY(${filter}::int[])
+              AND p.id NOT IN (SELECT unnest(${answeredIds}::bigint[]))
+              AND p.rand_key >= r.k
+            ORDER BY p.rand_key ASC
+            LIMIT 1
+          )
+          UNION ALL
+          (
+            SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
+            FROM passages p
+            JOIN categories c ON c.id = p.category_id, r
+            WHERE p.category_id = ANY(${filter}::int[])
+              AND p.id NOT IN (SELECT unnest(${answeredIds}::bigint[]))
+              AND p.rand_key < r.k
+            ORDER BY p.rand_key ASC
+            LIMIT 1
+          )
+          LIMIT 1
+        `;
+      } else {
+        rows = await sql/*sql*/`
+          WITH r AS (SELECT random() AS k)
+          (
+            SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
+            FROM passages p
+            JOIN categories c ON c.id = p.category_id, r
+            WHERE p.id NOT IN (SELECT unnest(${answeredIds}::bigint[]))
+              AND p.rand_key >= r.k
+            ORDER BY p.rand_key ASC
+            LIMIT 1
+          )
+          UNION ALL
+          (
+            SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
+            FROM passages p
+            JOIN categories c ON c.id = p.category_id, r
+            WHERE p.id NOT IN (SELECT unnest(${answeredIds}::bigint[]))
+              AND p.rand_key < r.k
+            ORDER BY p.rand_key ASC
+            LIMIT 1
+          )
+          LIMIT 1
+        `;
+      }
+    } else {
+      // No answered questions yet
+      if (filter.length > 0) {
+        rows = await sql/*sql*/`
+          WITH r AS (SELECT random() AS k)
+          (
+            SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
+            FROM passages p
+            JOIN categories c ON c.id = p.category_id, r
+            WHERE p.category_id = ANY(${filter}::int[])
+              AND p.rand_key >= r.k
+            ORDER BY p.rand_key ASC
+            LIMIT 1
+          )
+          UNION ALL
+          (
+            SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
+            FROM passages p
+            JOIN categories c ON c.id = p.category_id, r
+            WHERE p.category_id = ANY(${filter}::int[])
+              AND p.rand_key < r.k
+            ORDER BY p.rand_key ASC
+            LIMIT 1
+          )
+          LIMIT 1
+        `;
+      } else {
+        rows = await sql/*sql*/`
+          WITH r AS (SELECT random() AS k)
+          (
+            SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
+            FROM passages p
+            JOIN categories c ON c.id = p.category_id, r
+            WHERE p.rand_key >= r.k
+            ORDER BY p.rand_key ASC
+            LIMIT 1
+          )
+          UNION ALL
+          (
+            SELECT p.id, p.text, c.name AS category_name, c.css_category, c.theme_tokens
+            FROM passages p
+            JOIN categories c ON c.id = p.category_id, r
+            WHERE p.rand_key < r.k
+            ORDER BY p.rand_key ASC
+            LIMIT 1
+          )
+          LIMIT 1
+        `;
+      }
+    }
 
-    console.log('❓ [NEXT-QUESTION] Executing complex passage selection query with params:', {
-      filterLength: filter.length,
-      filter: filter,
-      answeredIds: answeredIds
-    });
-    console.log('❓ [NEXT-QUESTION] Full passage query SQL:', passageQuery);
-
-    const rows = await sql(passageQuery);
     console.log('❓ [NEXT-QUESTION] Passage query completed, raw result:', rows);
 
     const row = rows[0] || null;
